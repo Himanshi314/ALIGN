@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String
+  role          String         @default("EMPLOYEE")
+  department    String
+  designation   String
+  managerId     String?
+  manager       User?          @relation("ManagerReports", fields: [managerId], references: [id])
+  reports       User[]         @relation("ManagerReports")
+  goalSheets    GoalSheet[]
+  checkins      Checkin[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+}
+
+model Cycle {
+  id         String      @id @default(cuid())
+  name       String
+  quarter    String
+  startDate  DateTime
+  endDate    DateTime
+  status     String      @default("ACTIVE")
+  goalSheets GoalSheet[]
+  createdAt  DateTime    @default(now())
+}
+
+model GoalSheet {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  cycleId     String
+  cycle       Cycle    @relation(fields: [cycleId], references: [id])
+  status      String   @default("DRAFT")
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  returnNote  String?
+  goals       Goal[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Goal {
+  id             String    @id @default(cuid())
+  goalSheetId    String
+  goalSheet      GoalSheet @relation(fields: [goalSheetId], references: [id], onDelete: Cascade)
+  thrustArea     String
+  title          String
+  description    String
+  uom            String
+  target         Float
+  weightage      Float
+  isShared       Boolean   @default(false)
+  sharedSourceId String?
+  sharedSource   Goal?     @relation("SharedGoals", fields: [sharedSourceId], references: [id])
+  sharedCopies   Goal[]    @relation("SharedGoals")
+  achievement    Float     @default(0)
+  progressStatus String    @default("NOT_STARTED")
+  checkins       Checkin[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Checkin {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  quarter     String
+  planned     Float
+  achieved    Float
+  status      String
+  comment     String
+  managerNote String?
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  details   String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
